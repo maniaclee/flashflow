@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.lvbby</groupId>
-    <artifactId>flowable</artifactId>
+    <artifactId>flashflow</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
-        <module>flowable-core</module>
-        <module>flowable-spring</module>
-        <module>flowable-test</module>
+        <module>flashflow-core</module>
+        <module>flashflow-spring</module>
+        <module>flashflow-test</module>
     </modules>
 
     <build>
