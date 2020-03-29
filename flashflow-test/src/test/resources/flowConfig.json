@@ -1,0 +1,13 @@
+{
+
+  "scripts":[
+    {
+      "code":"scriptCode",
+      "extensions":{
+        "CreateOrderActionExt":{
+          "getTitle":"return 'groovyExtension-title' "
+        }
+      }
+    }
+  ]
+}

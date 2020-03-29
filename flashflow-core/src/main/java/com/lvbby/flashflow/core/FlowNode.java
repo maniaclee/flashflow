@@ -39,12 +39,12 @@ public class FlowNode {
     }
 
     public static FlowNode ofArray(IFlowAction... actions) {
-        FlowHelper.isTrue(actions != null && actions.length > 0, "action can't be empty");
+        FlowUtils.isTrue(actions != null && actions.length > 0, "action can't be empty");
         return ofList(Lists.newArrayList(actions));
     }
 
     public static FlowNode ofList(List<IFlowAction> actions) {
-        FlowHelper.isTrue(FlowUtils.isNotEmpty(actions), "action can't be empty");
+        FlowUtils.isTrue(FlowUtils.isNotEmpty(actions), "action can't be empty");
         FlowNode re = node(actions.get(0));
         FlowNode cur = re;
         for (int i = 1; i < actions.size(); i++) {

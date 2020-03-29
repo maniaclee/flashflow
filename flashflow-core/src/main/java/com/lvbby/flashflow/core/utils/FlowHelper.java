@@ -1,17 +1,18 @@
 
 package com.lvbby.flashflow.core.utils;
 
+import com.lvbby.flashflow.core.FlowContainer;
 import com.lvbby.flashflow.core.FlowContext;
 import com.lvbby.flashflow.core.FlowFrameWorkKeys;
+import com.lvbby.flashflow.core.FlowKey;
+import com.lvbby.flashflow.core.FlowScript;
 import com.lvbby.flashflow.core.IFlowAction;
 import com.lvbby.flashflow.core.IFlowActionExtension;
 import com.lvbby.flashflow.core.anno.FlowAction;
 import com.lvbby.flashflow.core.anno.FlowExt;
 import com.lvbby.flashflow.core.error.FlowErrorCodeEnum;
 import com.lvbby.flashflow.core.error.FlowException;
-import org.apache.commons.lang3.ClassUtils;
 
-import java.lang.annotation.Annotation;
 import java.util.Optional;
 
 /**
@@ -46,10 +47,6 @@ public class FlowHelper {
         return context.getConfig().getExtension(context, clz);
     }
 
-    public static boolean isClassOf(Class toCheck, Class target) {
-        return ClassUtils.isAssignable(toCheck, target);
-    }
-
     /***
      * 获取属性的方法
      * @param key
@@ -59,51 +56,69 @@ public class FlowHelper {
         Object prop = getProp(key);
         return prop == null ? defaultValue : prop;
     }
+
+    public static <T> T getProp(FlowKey<T> key) {
+        return (T) getProp(key.getKey());
+    }
+    /***
+     * 分2大层：
+     * 一、config层
+     * @see FlowScript#getExtProperty(com.lvbby.flashflow.core.FlowContext, java.lang.String)
+     * 1. 多action多级：    ${alias}#${key}
+     * 2. action级别：     ${actionName}#${key}
+     * 3. 全局：           ${key}
+     *
+     * 二、全局属性
+     * @see FlowContainer#getGlobalProps()
+     * @param key
+     * @return
+     */
     public static Object getProp(String key) {
         FlowContext flowContext = FlowContext.currentContext();
-        return flowContext.getConfig().getExtProperty(flowContext, key);
+        /** 1. config加载 */
+        Object extProperty = flowContext.getConfig().getExtProperty(flowContext, key);
+        /** 2. global props */
+        if (extProperty == null) {
+            return FlowContainer.getGlobalProps().get(key);
+        }
+        return extProperty;
+    }
+
+    /***
+     * 从value或prop里获取，顺序：value -> prop
+     * @param key
+     * @param <T>
+     * @return
+     */
+    public static <T> T getValueOrProp(FlowKey<T> key) {
+        return getValueOrProp(key.getKey());
+    }
+    public static <T> T getValueOrProp(String key) {
+        Object value = FlowContext.currentContext().getValue(key);
+        if(value==null){
+            value=getProp(key);
+        }
+        return (T) value;
     }
 
     public static String getFlowActionName(IFlowAction action) {
         String actionName = action.actionName();
         if (FlowUtils.isBlank(actionName)) {
-            FlowAction annotation = getAnnotation(action.getClass(), FlowAction.class);
+            FlowAction annotation = FlowUtils.getAnnotation(action.getClass(), FlowAction.class);
             if (annotation != null) {
                 actionName = annotation.id();
+            }
+            if (FlowUtils.isBlank(actionName)) {
+                actionName = action.getClass().getName();
             }
         }
         return actionName;
     }
 
     public static String getFlowExtName(Class extensionClz) {
-        FlowExt annotation = getAnnotation(extensionClz, FlowExt.class);
+        FlowExt annotation = FlowUtils.getAnnotation(extensionClz, FlowExt.class);
         return Optional.ofNullable(annotation).map(FlowExt::value).orElse(null);
     }
 
-    public static void isTrue(boolean expr, String msg) {
-        if (!expr) {
-            throw new FlowException(FlowErrorCodeEnum.systemError, msg);
-        }
-    }
-
-    public static <T> T newInstance(Class<T> clz) {
-        try {
-            return clz.newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException(String.format("failed to instance %s", clz.getName()), e);
-        }
-    }
-
-    public static <A extends Annotation> A getAnnotation(Class clz, Class<A> annotation) {
-        A re = (A) clz.getAnnotation(annotation);
-        if (re != null) { return re; }
-        re = ClassUtils.getAllInterfaces(clz).stream().filter(aClass -> aClass.isAnnotationPresent(annotation)).findAny()
-                .map(aClass -> aClass.getAnnotation(annotation)).orElse(null);
-        if (re == null) {
-            re = ClassUtils.getAllSuperclasses(clz).stream().filter(aClass -> aClass.isAnnotationPresent(annotation)).findAny()
-                    .map(aClass -> aClass.getAnnotation(annotation)).orElse(null);
-        }
-        return re;
-    }
 
 }

@@ -1,0 +1,10 @@
+import com.lvbby.flashflow.core.FlowContext
+
+import java.util.function.Predicate
+
+public class %s implements Predicate<FlowContext>{
+    @Override
+    boolean test(FlowContext context) {
+        return %s
+    }
+}

@@ -10,7 +10,7 @@ import com.lvbby.flashflow.core.anno.FlowExt;
  * @version $Id: InitActionExtension.java, v 0.1 2020年03月06日 22:12 dushang.lp Exp $
  */
 
-@FlowExt("CreateOrderAction")
+@FlowExt("CreateOrderActionExt")
 public interface CreateOrderActionExtension extends IFlowActionExtension {
 
      String getTitle();

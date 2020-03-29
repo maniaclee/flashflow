@@ -2,7 +2,8 @@
 package com.lvbby.flashflow.core;
 
 import com.lvbby.flashflow.core.anno.FlowAction;
-import com.lvbby.flashflow.core.utils.FlowHelper;
+import com.lvbby.flashflow.core.utils.FlowUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  *
@@ -10,11 +11,23 @@ import com.lvbby.flashflow.core.utils.FlowHelper;
  * @version $Id: FlowAction.java, v 0.1 2020年03月06日 下午5:14 dushang.lp Exp $
  */
 public interface IFlowAction<IContext extends FlowContext> {
-    void invoke(IContext context);
+    void invoke(IContext context) throws Exception;
 
+    /***
+     * 1. @FlowAction
+     * 2.class.name
+     * @return
+     */
     default String actionName() {
-        FlowAction annotation = FlowHelper.getAnnotation(getClass(), FlowAction.class);
-        return annotation == null ? null : annotation.id();
+        FlowAction annotation = FlowUtils.getAnnotation(getClass(), FlowAction.class);
+        String id = getClass().getName();
+        if (annotation != null) {
+            id = annotation.id();
+        }
+        if(StringUtils.isBlank(id)){
+            id = StringUtils.uncapitalize(getClass().getSimpleName());
+        }
+        return id;
     }
 
 }

@@ -1,5 +1,6 @@
 package com.lvbby.flashflow.test.spring;
 
+import com.lvbby.flashflow.core.anno.FlowProp;
 import com.lvbby.flashflow.test.AbstractOrderAction;
 import com.lvbby.flashflow.test.CreateOrderActionExtension;
 import com.lvbby.flashflow.test.OrderContext;
@@ -16,7 +17,9 @@ import java.util.Optional;
 @Component
 public class CreateOrderAction extends AbstractOrderAction {
 
+    @FlowProp
     public static final String PROP          = "title";
+    @FlowProp
     public static final String PROP_DELEGATE = "createOrder.delegate.prop";
 
     @Override

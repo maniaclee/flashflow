@@ -1,6 +1,7 @@
 
 package com.lvbby.flashflow.core;
 
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Maps;
 import com.lvbby.flashflow.core.utils.FlowHelper;
 import com.lvbby.flashflow.core.utils.FlowUtils;
@@ -22,6 +23,11 @@ public class FlowContainer {
      * 全局action
      */
     private static Map<String, IFlowAction> actionMap = Maps.newHashMap();
+
+    /***
+     * 全局属性
+     */
+    private static JSONObject globalProps = new JSONObject();
 
     public static FlowScript getFlowConfig(String code) {
         return configMap.get(code);
@@ -91,5 +97,14 @@ public class FlowContainer {
      */
     public static void setActionMap(Map<String, IFlowAction> actionMap) {
         FlowContainer.actionMap = actionMap;
+    }
+
+    /**
+     * Getter method for property   globalProps.
+     *
+     * @return property value of globalProps
+     */
+    public static JSONObject getGlobalProps() {
+        return globalProps;
     }
 }

@@ -25,6 +25,12 @@ public abstract class AbstractFlowAction<T extends FlowContext> implements IFlow
         return prop == null ? defaultValue : (PROP) prop;
     }
 
+    public <PROP> PROP getValueOrPropOrDefault(FlowKey<PROP> key, PROP defaultValue) {
+        Object prop = FlowHelper.getValueOrProp(key.getKey());
+        return prop == null ? defaultValue : (PROP) prop;
+    }
+
+
     public void stopFlow(){
         FlowHelper.stopFlow();
     }

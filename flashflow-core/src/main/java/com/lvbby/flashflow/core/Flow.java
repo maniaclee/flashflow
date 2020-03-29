@@ -1,9 +1,13 @@
 
 package com.lvbby.flashflow.core;
 
-import com.lvbby.flashflow.core.utils.FlowUtils;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.reflect.ClassPath;
+import com.google.common.reflect.ClassPath.ClassInfo;
 import com.lvbby.flashflow.core.error.FlowException;
+import com.lvbby.flashflow.core.model.FlowStreamModel;
 import com.lvbby.flashflow.core.utils.FlowHelper;
+import com.lvbby.flashflow.core.utils.FlowUtils;
 
 import java.util.List;
 
@@ -14,12 +18,51 @@ import java.util.List;
  */
 public class Flow {
 
+    /***
+     * scanAction
+     * @param packageName
+     * @throws Exception
+     */
+    public static void scan(String packageName) throws Exception {
+        ImmutableSet<ClassInfo> cls = ClassPath.from(Flow.class.getClassLoader()).getTopLevelClassesRecursive(
+                packageName);
+        for (ClassInfo cl : cls) {
+            Class<?> clz = cl.load();
+            if (FlowUtils.isClassOf(clz, IFlowAction.class)  ) {
+                IFlowAction flowAction = (IFlowAction) FlowUtils.newInstance(clz);
+                FlowContainer.registerFlowAction(flowAction);
+            }
+        }
+    }
+
+    /***
+     * 便捷执行actions，无config
+     * @param context
+     * @param actions
+     * @param <IContext>
+     */
     public static <IContext extends FlowContext> void execSimple(IContext context, IFlowAction... actions) {
         FlowNode flowNode = FlowNode.ofArray(actions);
-        context.setConfig(FlowScript.anonymous(flowNode));
+        context.setConfig(FlowScript.of(flowNode));
         exec(context);
     }
 
+    /***
+     * 执行一个临时流程FlowNode，无config
+     * @param context
+     * @param node
+     * @param <IContext>
+     */
+    public static <IContext extends FlowContext> void exec(IContext context, FlowNode node) {
+        context.setConfig(FlowScript.of(node));
+        exec(context);
+    }
+
+    /***
+     * 通用的执行流程
+     * @param context
+     * @param <IContext>
+     */
     public static <IContext extends FlowContext> void exec(IContext context) {
         /** 初始化上下文 */
         if (context.getConfig() == null) {
@@ -39,7 +82,10 @@ public class Flow {
                 default:
                     throw e;
             }
-        } finally {
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
+        finally {
             FlowContext.cleanContext();
         }
     }
@@ -51,7 +97,7 @@ public class Flow {
      * @param node
      * @param <IContext>
      */
-    private static <IContext extends FlowContext> void _doExec(IContext context, FlowNode node) {
+    private static <IContext extends FlowContext> void _doExec(IContext context, FlowNode node) throws Exception {
         Boolean stopFlag = context.get(FlowFrameWorkKeys.stopFlag);
         /** stop flow */
         if (stopFlag != null && stopFlag) {
@@ -67,13 +113,27 @@ public class Flow {
             Object ignore = FlowHelper.getProp("_skip");
             if (!(ignore != null && ignore instanceof Boolean && (Boolean) ignore)) {
                 flowAction.invoke(context);
-            }
-            List<FlowNode> children = node.getChildren();
-            /** invoke children */
-            if (FlowUtils.isNotEmpty(children)) {
-                for (FlowNode child : children) {
-                    _doExec(context, child);
+
+                /** dispatch stream */
+                FlowStreamModel flowStreamModel = context.get(FlowFrameWorkKeys.stream);
+                if (flowStreamModel != null && flowStreamModel.targetlist != null) {
+                    for (Object targetObject : flowStreamModel.targetlist) {
+                        context.putValue(flowStreamModel.key, targetObject);
+                        _invokeChildren(context, node);
+                    }
+                    return;
                 }
+            }
+            _invokeChildren(context, node);
+        }
+    }
+
+    private static <IContext extends FlowContext> void _invokeChildren(IContext context, FlowNode node) throws Exception {
+        List<FlowNode> children = node.getChildren();
+        /** invoke children */
+        if (FlowUtils.isNotEmpty(children)) {
+            for (FlowNode child : children) {
+                _doExec(context, child);
             }
         }
     }

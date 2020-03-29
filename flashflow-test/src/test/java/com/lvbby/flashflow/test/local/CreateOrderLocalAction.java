@@ -12,7 +12,7 @@ import java.util.Optional;
 /**
  *
  * @author dushang.lp
- * @version $Id: CreateOrderLocalAction.java, v 0.1 2020��03��09�� ����8:53 dushang.lp Exp $
+ * @version $Id: CreateOrderLocalAction.java dushang.lp Exp $
  */
 @FlowAction(id = "CreateOrderLocalAction")
 public class CreateOrderLocalAction implements IFlowAction{

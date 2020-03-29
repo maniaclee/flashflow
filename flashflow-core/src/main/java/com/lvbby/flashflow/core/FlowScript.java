@@ -1,16 +1,13 @@
 
 package com.lvbby.flashflow.core;
 
-import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.lvbby.flashflow.core.utils.FlowUtils;
 import com.lvbby.flashflow.core.utils.FlowHelper;
+import com.lvbby.flashflow.core.utils.FlowUtils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -31,8 +28,50 @@ public class FlowScript {
      * ${alias}#${actionName}${extensionKey} : value
      * 前面的可以key可以没有
      */
-    private Multimap<String, IFlowActionExtension> extensions = LinkedHashMultimap.create();
-    private Map<String, Object>                    props      = Maps.newHashMap();
+    private Map<String, IFlowActionExtension> extensions = Maps.newHashMap();
+    private Map<String, Object>               props      = Maps.newHashMap();
+
+    /***
+     * 临时流程，不向容器注册
+     * @param node
+     * @return
+     */
+    public static FlowScript of(FlowNode node) {
+        return of(null, node);
+    }
+
+    public static FlowScript of(IFlowAction... actions) {
+        FlowUtils.isTrue(actions != null && actions.length > 0, "actions can't be empty");
+        return of(null, FlowNode.ofArray(actions));
+    }
+
+    public static FlowScript of(String code) {
+        return of(code, null);
+    }
+
+    public static FlowScript of(String code, FlowNode flowScript) {
+        FlowScript re = new FlowScript();
+        re.setCode(code);
+        re.setPipeline(flowScript);
+        return re;
+    }
+
+    public FlowScript flowScript(FlowNode flowScript) {
+        setPipeline(flowScript);
+        return this;
+    }
+
+    /***
+     * 向容器注册
+     * 如果没有code则为匿名临时script，不向容器注册
+     * @return
+     */
+    public FlowScript register() {
+        if (FlowUtils.isNotBlank(code)) {
+            FlowContainer.addFlowConfig(this);
+        }
+        return this;
+    }
 
     /***
      * 获取extension
@@ -43,10 +82,13 @@ public class FlowScript {
      */
     public <Ext extends IFlowActionExtension> Ext getExtension(FlowContext context, Class<Ext> extClass) {
         String extName = FlowHelper.getFlowExtName(extClass);
-        Function<String, Ext> fetchExt = k -> (Ext) Optional.ofNullable(extensions.get(k))
-                .filter(FlowUtils::isNotEmpty)
-                .map(e -> e.stream().filter(ext -> FlowHelper.isClassOf(ext.getClass(), extClass)).findAny().orElse(null))
-                .orElse(null);
+        Function<String, Ext> fetchExt = k -> {
+            IFlowActionExtension ext = extensions.get(k);
+            if (ext != null && FlowUtils.isClassOf(ext.getClass(), extClass)) {
+                return (Ext) ext;
+            }
+            return null;
+        };
         return handleKeySearch(context, extName, fetchExt);
     }
 
@@ -106,43 +148,6 @@ public class FlowScript {
         return addExtension(key, extension);
     }
 
-    /***
-     * 临时流程，不向容器注册
-     * @param node
-     * @return
-     */
-    public static FlowScript anonymous(FlowNode node) {
-        return of(null, node);
-    }
-
-    public static FlowScript of(String code) {
-        return of(code, null);
-    }
-
-    public static FlowScript of(String code, FlowNode flowScript) {
-        FlowScript re = new FlowScript();
-        re.setCode(code);
-        re.setPipeline(flowScript);
-        return re;
-    }
-
-    public FlowScript flowScript(FlowNode flowScript) {
-        setPipeline(flowScript);
-        return this;
-    }
-
-    /***
-     * 向容器注册
-     * 如果没有code则为匿名临时script，不向容器注册
-     * @return
-     */
-    public FlowScript register() {
-        if (FlowUtils.isNotBlank(code)) {
-            FlowContainer.addFlowConfig(this);
-        }
-        return this;
-    }
-
     /**
      * Getter method for property   code.
      *
@@ -179,4 +184,39 @@ public class FlowScript {
         this.pipeline = pipeline;
     }
 
+    /**
+     * Getter method for property   props.
+     *
+     * @return property value of props
+     */
+    public Map<String, Object> getProps() {
+        return props;
+    }
+
+    /**
+     * Setter method for property   props .
+     *
+     * @param props  value to be assigned to property props
+     */
+    public void setProps(Map<String, Object> props) {
+        this.props = props;
+    }
+
+    /**
+     * Getter method for property   extensions.
+     *
+     * @return property value of extensions
+     */
+    public Map<String, IFlowActionExtension> getExtensions() {
+        return extensions;
+    }
+
+    /**
+     * Setter method for property   extensions .
+     *
+     * @param extensions  value to be assigned to property extensions
+     */
+    public void setExtensions(Map<String, IFlowActionExtension> extensions) {
+        this.extensions = extensions;
+    }
 }
