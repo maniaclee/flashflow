@@ -14,6 +14,10 @@ import java.util.function.Predicate;
  * @version $Id: FlowNode.java, v 0.1 2020年03月06日 下午5:11 dushang.lp Exp $
  */
 public class FlowNode {
+    /**
+     * action的id
+     * @see IFlowAction#actionId()
+     */
     private String                 actionId;
     /** 节点名称，用作命名 */
     private String                 name;
@@ -87,14 +91,6 @@ public class FlowNode {
     public FlowNode alias(String alias) {
         setAlias(alias);
         return this;
-    }
-
-    /***
-     * 如果有alias，则直接使用alias作为id
-     * @return
-     */
-    public String id() {
-        return FlowUtils.isBlank(alias) ? actionId : alias;
     }
 
     /**

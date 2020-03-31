@@ -18,7 +18,7 @@ public interface IFlowAction<IContext extends FlowContext> {
      * 2.class.name
      * @return
      */
-    default String actionName() {
+    default String actionId() {
         FlowAction annotation = FlowUtils.getAnnotation(getClass(), FlowAction.class);
         String id = getClass().getName();
         if (annotation != null) {

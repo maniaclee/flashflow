@@ -18,7 +18,7 @@ public class FlowConfig implements Serializable {
     /***
      * 全局prop
      */
-    private JSONObject globalProps;
+    private JSONObject props;
 
     /***
      * 全局扩展
@@ -31,21 +31,21 @@ public class FlowConfig implements Serializable {
     private List<FlowScript> scripts;
 
     /**
-     * Getter method for property   globalProps.
+     * Getter method for property   props.
      *
-     * @return property value of globalProps
+     * @return property value of props
      */
-    public JSONObject getGlobalProps() {
-        return globalProps;
+    public JSONObject getProps() {
+        return props;
     }
 
     /**
-     * Setter method for property   globalProps .
+     * Setter method for property   props .
      *
-     * @param globalProps  value to be assigned to property globalProps
+     * @param props  value to be assigned to property props
      */
-    public void setGlobalProps(JSONObject globalProps) {
-        this.globalProps = globalProps;
+    public void setProps(JSONObject props) {
+        this.props = props;
     }
 
     /**

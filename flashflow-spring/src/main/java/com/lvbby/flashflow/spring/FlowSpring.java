@@ -38,8 +38,8 @@ public class FlowSpring implements ApplicationContextAware, ApplicationListener<
         Map<String, IFlowAction> actions = applicationContext.getBeansOfType(IFlowAction.class);
         actions.forEach((beanName, action) -> {
             /** 注册所有的action */
-            FlowContainer.registerFlowAction(action.actionName(), action);
-            System.out.println("register flowAction:" + action.actionName());
+            FlowContainer.registerFlowAction(action.actionId(), action);
+            System.out.println("register flowAction:" + action.actionId());
         });
         /** 2.注册script */
         Map<String, FlowScript> bizList = applicationContext.getBeansOfType(FlowScript.class);
@@ -50,12 +50,12 @@ public class FlowSpring implements ApplicationContextAware, ApplicationListener<
 
     /***
      * 优先级：
-     * 1. IFlowAction#actionName
+     * 1. IFlowAction#actionId
      * 2. FlowAction
      * 3. spring bean name
      */
     private String getActionName(String actionBeanName, IFlowAction flowAction) {
-        String actionName = flowAction.actionName();
+        String actionName = flowAction.actionId();
         if (FlowUtils.isNotBlank(actionName)) {
             return actionName;
         }
@@ -74,10 +74,10 @@ public class FlowSpring implements ApplicationContextAware, ApplicationListener<
                 final IFlowAction iFlowAction = (IFlowAction) bean;
 
                 /** 代理bean的actionName方法，返回beanName */
-                if (FlowUtils.isBlank(iFlowAction.actionName())) {
+                if (FlowUtils.isBlank(iFlowAction.actionId())) {
                     return createProxy(iFlowAction, invocation -> {
                         Method method = invocation.getMethod();
-                        if (method.getName().equals("actionName")) {
+                        if (method.getName().equals("actionId")) {
                             return getActionName(beanName, iFlowAction);
                         }
                         return invocation.proceed();

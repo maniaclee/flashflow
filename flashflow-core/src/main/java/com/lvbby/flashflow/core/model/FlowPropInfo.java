@@ -1,6 +1,13 @@
-package com.lvbby.flashflow.core.tool;
+package com.lvbby.flashflow.core.model;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+import com.lvbby.flashflow.core.utils.FlowUtils;
+
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  *
@@ -14,6 +21,37 @@ public class FlowPropInfo {
     private Type   type;
     private String desc;
     private String typeName;
+
+    /***
+     * 默认值，生成文档时生成json config的默认值
+     * @return
+     */
+    public String defaultValueJson(){
+        return JSON.toJSONString(defaultValue(), SerializerFeature.WriteMapNullValue);
+    }
+
+
+    public Object defaultValue(){
+        Type t = type;
+        if(t instanceof ParameterizedType){
+            t= ((ParameterizedType) t).getRawType();
+        }
+        if(t instanceof Class){
+            Class clz = (Class) t;
+            if(clz.equals(String.class)){
+                return desc;
+            }
+            if(FlowUtils.isClassOf(clz,Number.class)){
+                return 0;
+            }
+            if(FlowUtils.isClassOf(clz, Collection.class)){
+                return Collections.emptyList();
+            }
+            return FlowUtils.newInstance(clz);
+        }
+        //提示作用
+        return typeName;
+    }
 
     /**
      * Getter method for property   global.

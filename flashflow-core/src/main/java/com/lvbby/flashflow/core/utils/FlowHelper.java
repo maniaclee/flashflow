@@ -1,6 +1,7 @@
 
 package com.lvbby.flashflow.core.utils;
 
+import com.alibaba.fastjson.JSONObject;
 import com.lvbby.flashflow.core.FlowContainer;
 import com.lvbby.flashflow.core.FlowContext;
 import com.lvbby.flashflow.core.FlowFrameWorkKeys;
@@ -65,7 +66,7 @@ public class FlowHelper {
      * 一、config层
      * @see FlowScript#getExtProperty(com.lvbby.flashflow.core.FlowContext, java.lang.String)
      * 1. 多action多级：    ${alias}#${key}
-     * 2. action级别：     ${actionName}#${key}
+     * 2. action级别：     ${actionId}#${key}
      * 3. 全局：           ${key}
      *
      * 二、全局属性
@@ -91,18 +92,28 @@ public class FlowHelper {
      * @return
      */
     public static <T> T getValueOrProp(FlowKey<T> key) {
-        return getValueOrProp(key.getKey());
+        return getValueOrProp(key, null);
+    }
+    public static <T> T getValueOrProp(FlowKey<T> key,Class<T> clz) {
+        return getValueOrProp(key.getKey(),clz);
     }
     public static <T> T getValueOrProp(String key) {
+        return getValueOrProp(key, null);
+    }
+    public static <T> T getValueOrProp(String key,Class<T> clz) {
         Object value = FlowContext.currentContext().getValue(key);
         if(value==null){
             value=getProp(key);
+        }
+        /** 配置文件key对应的对象，通过强制指定类型来进行转化 */
+        if(value instanceof JSONObject && clz != null){
+            return ((JSONObject) value).toJavaObject(clz);
         }
         return (T) value;
     }
 
     public static String getFlowActionName(IFlowAction action) {
-        String actionName = action.actionName();
+        String actionName = action.actionId();
         if (FlowUtils.isBlank(actionName)) {
             FlowAction annotation = FlowUtils.getAnnotation(action.getClass(), FlowAction.class);
             if (annotation != null) {

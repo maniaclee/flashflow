@@ -25,7 +25,7 @@ public class FlowScript {
      * 不管ext还是pros都有几层复用问题：
      * 1. 平台prop/ext被多个action使用
      *
-     * ${alias}#${actionName}${extensionKey} : value
+     * ${alias}#${actionId}${extensionKey} : value
      * 前面的可以key可以没有
      */
     private Map<String, IFlowActionExtension> extensions = Maps.newHashMap();
@@ -106,7 +106,7 @@ public class FlowScript {
      * 获取属性或扩展
      * 分3层：
      * 1. 多action多级：    ${alias}#${key}
-     * 2. action级别：     ${actionName}#${key}
+     * 2. action级别：     ${actionId}#${key}
      * 3. 全局：           ${key}
      * @param context
      * @param key
@@ -116,7 +116,7 @@ public class FlowScript {
      */
     private <T> T handleKeySearch(FlowContext context, String key, Function<String, T> func) {
         FlowNode flowNode = context.currentNode();
-        String actionName = FlowContainer.getFlowAction(flowNode.getActionId()).actionName();
+        String actionName = FlowContainer.getFlowAction(flowNode.getActionId()).actionId();
         String alias = flowNode.getAlias();
         List<String> keys = Lists.newLinkedList();
         if (FlowUtils.isNotBlank(alias)) {

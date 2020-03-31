@@ -1,4 +1,4 @@
-package com.lvbby.flashflow.core.tool;
+package com.lvbby.flashflow.core.model;
 
 import java.util.List;
 

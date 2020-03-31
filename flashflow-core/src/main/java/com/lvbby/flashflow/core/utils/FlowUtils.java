@@ -15,6 +15,7 @@ import org.apache.commons.lang3.ClassUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
@@ -68,7 +69,11 @@ public class FlowUtils {
     }
 
     public static String readResourceFile(String resource) {
-        InputStreamReader in = new InputStreamReader(FlowUtils.class.getClassLoader().getResourceAsStream(resource));
+        return readFile(FlowUtils.class.getClassLoader().getResourceAsStream(resource));
+    }
+
+    public static String readFile(InputStream resource) {
+        InputStreamReader in = new InputStreamReader(resource);
         String result = new BufferedReader(in)
                 .lines()
                 .collect(Collectors.joining("\n"));

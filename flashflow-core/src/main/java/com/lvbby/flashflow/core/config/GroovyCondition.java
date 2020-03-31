@@ -2,7 +2,6 @@ package com.lvbby.flashflow.core.config;
 
 import com.lvbby.flashflow.core.FlowContext;
 import com.lvbby.flashflow.core.utils.FlowUtils;
-import com.lvbby.flashflow.core.utils.Templates;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -15,11 +14,12 @@ import java.util.function.Predicate;
 public class GroovyCondition implements Predicate<FlowContext> {
 
     private Predicate<FlowContext> groovyPredicate;
+    private static     String beanScript = FlowUtils.readResourceFile("templates/GroovyCondition.template");
     private static AtomicInteger classNameCounter = new AtomicInteger(0);
 
     public GroovyCondition(String script) {
         String className = String.format("GC_%s", classNameCounter.incrementAndGet());
-        String predictClassScript = Templates.GroovyCondition.format(className, script);
+        String predictClassScript = beanScript.format(className, script);
         System.out.println(predictClassScript);
         /** 生成代理类 */
         this.groovyPredicate =FlowUtils.groovyInstance(predictClassScript);

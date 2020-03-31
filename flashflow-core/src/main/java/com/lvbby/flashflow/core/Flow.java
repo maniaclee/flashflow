@@ -1,15 +1,25 @@
 
 package com.lvbby.flashflow.core;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.ClassPath;
-import com.google.common.reflect.ClassPath.ClassInfo;
+import com.google.common.collect.Lists;
+import com.lvbby.flashflow.core.anno.FlowProp;
+import com.lvbby.flashflow.core.anno.FlowPropConfig;
+import com.lvbby.flashflow.core.config.FlowConfig;
+import com.lvbby.flashflow.core.config.FlowConfigParser;
 import com.lvbby.flashflow.core.error.FlowException;
+import com.lvbby.flashflow.core.model.FlowActionInfo;
+import com.lvbby.flashflow.core.model.FlowPropInfo;
 import com.lvbby.flashflow.core.model.FlowStreamModel;
 import com.lvbby.flashflow.core.utils.FlowHelper;
 import com.lvbby.flashflow.core.utils.FlowUtils;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.List;
+import java.util.ServiceLoader;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -18,20 +28,49 @@ import java.util.List;
  */
 public class Flow {
 
+    static {
+        /** load actions */
+        ServiceLoader<IFlowAction> load = ServiceLoader.load(IFlowAction.class);
+        load.forEach(iFlowAction -> FlowContainer.registerFlowAction(iFlowAction));
+    }
+    public static void loadConfig(String jsonConfig) {
+        FlowConfig config = FlowConfigParser.parse(jsonConfig);
+        /** 1. script */
+        if (FlowUtils.isNotEmpty(config.getScripts())) {
+            config.getScripts().forEach(s -> FlowContainer.addFlowConfig(s));
+        }
+        /** 2. props */
+        if (config.getProps() != null) {
+            FlowContainer.getGlobalProps().putAll(config.getProps());
+        }
+
+    }
+
     /***
-     * scanAction
+     * 扫描属性,用来做属性解析
+     * @see FlowProp
+     * @see FlowPropConfig
      * @param packageName
      * @throws Exception
      */
-    public static void scan(String packageName) throws Exception {
-        ImmutableSet<ClassInfo> cls = ClassPath.from(Flow.class.getClassLoader()).getTopLevelClassesRecursive(
-                packageName);
-        for (ClassInfo cl : cls) {
-            Class<?> clz = cl.load();
-            if (FlowUtils.isClassOf(clz, IFlowAction.class)  ) {
-                IFlowAction flowAction = (IFlowAction) FlowUtils.newInstance(clz);
-                FlowContainer.registerFlowAction(flowAction);
-            }
+    public static void scanProps(String... packageName) throws Exception {
+        scanActionProps(packageName);
+        scanGlobalProps(packageName);
+    }
+
+    /***
+     * local模式自动注册action
+     * @param packages
+     */
+    public static void scanActions(String... packages) {
+        List<Class> actionClasses = FlowUtils.scan(c ->
+                        !Modifier.isAbstract(c.getModifiers())
+                        && !Modifier.isInterface(c.getModifiers())
+                        && FlowUtils.isClassOf(c, IFlowAction.class)
+                , packages);
+        for (Class clz : actionClasses) {
+            IFlowAction flowAction = (IFlowAction) FlowUtils.newInstance(clz);
+            FlowContainer.registerFlowAction(flowAction);
         }
     }
 
@@ -68,6 +107,7 @@ public class Flow {
         if (context.getConfig() == null) {
             context.setConfig(FlowContainer.getFlowConfig(context.getCode()));
         }
+        FlowUtils.isTrue(context.getConfig() != null, String.format("config not found for code:%s", context.getCode()));
         FlowContext.buildCurrentContext(context);
 
         try {
@@ -82,17 +122,16 @@ public class Flow {
                 default:
                     throw e;
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException(e);
-        }
-        finally {
+        } finally {
             FlowContext.cleanContext();
         }
     }
 
     /***
      * 1. 终止流程：设置stopFlag或抛异常
-     * 2. 跳过某个action，${actionName}#_skip,通过属性跳过
+     * 2. 跳过某个action，${actionId}#_skip,通过属性跳过
      * @param context
      * @param node
      * @param <IContext>
@@ -138,4 +177,89 @@ public class Flow {
         }
     }
 
+    /**
+     * 扫描所有全局props
+     * @param packages
+     * @return
+     * @throws Exception
+     */
+    private static void scanGlobalProps(String... packages) {
+        List<Class> props = FlowUtils.scan(c ->
+                        !Modifier.isAbstract(c.getModifiers())
+                        && !Modifier.isInterface(c.getModifiers())
+                        && c.isAnnotationPresent(FlowPropConfig.class)
+                , packages);
+        props.forEach(c -> {
+            List<FlowPropInfo> flowPropInfos = buildProps(c);
+            for (FlowPropInfo flowPropInfo : flowPropInfos) {
+                FlowUtils.isTrue(!FlowContainer.propMetaInfo.containsKey(flowPropInfo.getKey()),
+                        String.format("duplicated key[%s],info:%s", flowPropInfo.getKey(), flowPropInfo));
+                FlowContainer.propMetaInfo.put(flowPropInfo.getKey(), flowPropInfo);
+            }
+        });
+    }
+
+    /***
+     * 扫描所有的action的prop
+     * @param packages
+     * @return
+     * @throws Exception
+     */
+    private static void scanActionProps(String... packages) {
+        List<Class> classes = _scanActions(packages);
+        FlowContainer.actionMetaInfo = classes.stream().map(clz -> {
+            FlowActionInfo flowActionInfo = new FlowActionInfo();
+            flowActionInfo.actionClass = clz;
+            flowActionInfo.name = ((IFlowAction) FlowUtils.newInstance(clz)).actionId();
+            flowActionInfo.props = buildProps(clz);
+            return flowActionInfo;
+        }).collect(Collectors.toList());
+    }
+
+    private static List<FlowPropInfo> buildProps(Class<?> actionClass) {
+        try {
+            boolean isGlobal = actionClass.isAnnotationPresent(FlowPropConfig.class);
+            List<FlowPropInfo> re = Lists.newLinkedList();
+            for (Field f : actionClass.getDeclaredFields()) {
+                if (Modifier.isStatic(f.getModifiers()) && f.isAnnotationPresent(FlowProp.class)) {
+                    FlowProp annotation = f.getAnnotation(FlowProp.class);
+                    f.setAccessible(true);
+                    FlowPropInfo flowPropInfo = new FlowPropInfo();
+                    flowPropInfo.setActionClass(actionClass);
+                    flowPropInfo.setDesc(annotation.value());
+                    flowPropInfo.setGlobal(isGlobal);
+                    Class<?> type = f.getType();
+                    if (FlowUtils.isClassOf(type, FlowKey.class)) {
+                        Type paramType = ((ParameterizedType) f.getGenericType()).getActualTypeArguments()[0];
+                        FlowKey o = (FlowKey) f.get(null);
+                        flowPropInfo.setKey(o.getKey());
+                        //支持泛型参数
+                        flowPropInfo.setType(paramType);
+                    }
+                    if (FlowUtils.isClassOf(type, String.class)) {
+                        flowPropInfo.setKey((String) f.get(null));
+                    }
+                    re.add(flowPropInfo);
+                }
+            }
+            return re;
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /***
+     * 扫描action
+     * @param packages
+     * @return
+     * @throws Exception
+     */
+    private static List<Class> _scanActions(String... packages) {
+        List<Class> actionClasses = FlowUtils.scan(c ->
+                        !Modifier.isAbstract(c.getModifiers())
+                        && !Modifier.isInterface(c.getModifiers())
+                        && FlowUtils.isClassOf(c, IFlowAction.class)
+                , packages);
+        return actionClasses;
+    }
 }
