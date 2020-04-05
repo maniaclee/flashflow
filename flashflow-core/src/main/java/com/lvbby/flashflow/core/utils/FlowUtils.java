@@ -21,6 +21,9 @@ import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -201,6 +204,29 @@ public class FlowUtils {
         }
 
         return true;
+    }
+
+    public static String findFirst(String src, String regx, Function<Matcher, String> function) {
+        if (isBlank(src)) { return null; }
+        for (Matcher matcher = Pattern.compile(regx).matcher(src); matcher.find(); ) { return function.apply(matcher); }
+        return null;
+    }
+
+    public static String firstNonBlank(String... ss) {
+        if (ss != null) {
+            for (String s : ss) {
+                if (isNotBlank(s)) {
+                    return s;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static String extractJavaClassNameFromSrc(String s) {
+        return findFirst(s,
+                "public\\s+((((abstract)|(final))\\s+)+)?((class)|(enum)|(interface)|(@interface))\\s+(?<class>\\S+)",
+                matcher -> matcher.group("class"));
     }
 
 }

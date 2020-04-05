@@ -7,7 +7,7 @@ package com.lvbby.flashflow.core;
  */
 public class FlowKey<T> {
 
-    private String key;
+    public final String key;
 
     public FlowKey(String key) {
         this.key = key;

@@ -13,7 +13,9 @@ import com.lvbby.flashflow.core.anno.FlowAction;
 import com.lvbby.flashflow.core.anno.FlowExt;
 import com.lvbby.flashflow.core.error.FlowErrorCodeEnum;
 import com.lvbby.flashflow.core.error.FlowException;
+import com.lvbby.flashflow.core.model.FlowStreamModel;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -47,6 +49,7 @@ public class FlowHelper {
     public static <Ext extends IFlowActionExtension> Ext getExtension(FlowContext context, Class<Ext> clz) {
         return context.getConfig().getExtension(context, clz);
     }
+
 
     /***
      * 获取属性的方法
@@ -110,6 +113,15 @@ public class FlowHelper {
             return ((JSONObject) value).toJavaObject(clz);
         }
         return (T) value;
+    }
+
+    /***
+     * 将多个任务分发成多个批次执行
+     * @param singleTaskKey
+     * @param batchTask
+     */
+    public static void stream(String singleTaskKey , List batchTask ){
+        FlowContext.currentContext().put(FlowFrameWorkKeys.stream, new FlowStreamModel(singleTaskKey, batchTask));
     }
 
     public static String getFlowActionName(IFlowAction action) {

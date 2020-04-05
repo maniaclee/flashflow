@@ -6,6 +6,7 @@ import com.alibaba.fastjson.parser.ParserConfig;
 import com.alibaba.fastjson.parser.deserializer.ObjectDeserializer;
 import com.lvbby.flashflow.core.IFlowActionExtension;
 import com.lvbby.flashflow.core.utils.FlowUtils;
+import org.yaml.snakeyaml.Yaml;
 
 import java.lang.reflect.Type;
 import java.util.Map;
@@ -18,7 +19,7 @@ import java.util.function.Predicate;
  */
 public class FlowConfigParser {
 
-    public static FlowConfig  parse(String s ){
+    public static FlowConfig  parseJson(String s ){
         ParserConfig config = new ParserConfig();
         config.putDeserializer(IFlowActionExtension.class, new ObjectDeserializer() {
 
@@ -66,6 +67,19 @@ public class FlowConfigParser {
         });
         return JSON.parseObject(s,FlowConfig.class, config);
     }
+
+    public static String json2yaml(String s){
+        //TODO
+        return new Yaml().dump(JSON.parseObject(s));
+    }
+
+    public static FlowConfig  parseYaml(String s ){
+        Yaml yaml = new Yaml();
+        //TODO
+        FlowConfig ret = yaml.loadAs(s, FlowConfig.class);
+        return ret;
+    }
+
 
 
 

@@ -59,19 +59,48 @@ public class FlashflowLocalExample {
     }
 
     @Test
-    public void demo() {
+    public void nodeDemo() {
 
         /** 1. 定义流程编排*/
-        FlowNode pipeline = node(initAction)
+        FlowNode pipeline = FlowNode.node(initAction)
+                .next(node(processAction) );
+
+        /** 2. 定义场景：场景名称+流程编排 */
+        FlowScript.of("example", pipeline).register();
+
+        /** 启动流程：按照场景名称进行触发 */
+        Flow.exec(new OrderContext("example"));
+    }
+    @Test
+    public void conditionDemo() {
+
+        /** 1. 定义流程编排*/
+        FlowNode pipeline = FlowNode.node(initAction)
                 .next(node(processAction)
                         .when(ctx -> FlowUtils.equals(ctx.getValueString("props"), "test"))
                 );
 
         /** 2. 定义场景：流程+扩展点 */
-        FlowScript.of("example", pipeline).register();
-
         FlowScript.of("pipeline", pipeline)
-                .addExtension((CreateOrderActionExtension) () -> "test title")
+                .register()
+        ;
+
+        /** 启动流程 */
+        Flow.exec(new OrderContext("pipeline").putValue("props", "test"));
+        Flow.exec(new OrderContext("pipeline").putValue("props", "not match property"));
+    }
+    @Test
+    public void demo() {
+
+        /** 1. 定义流程编排*/
+        FlowNode pipeline = FlowNode.node(initAction)
+                .next(node(processAction)
+                        .when(ctx -> FlowUtils.equals(ctx.getValueString("props"), "test"))
+                );
+
+        /** 2. 定义场景：流程+扩展点 */
+        FlowScript.of("pipeline", pipeline)
+                .addExtension((CreateOrderActionExtension) () -> "test title")//
                 .register()
         ;
 

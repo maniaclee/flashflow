@@ -20,5 +20,4 @@ public @interface FlowAction {
     Class<? extends IFlowActionExtension>[] value() default {};
 
     String id() default "";
-
 }

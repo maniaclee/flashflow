@@ -57,7 +57,7 @@ public class SimpleTest {
         configString = configString.replace("\"XX\"", String.format("'%s'", extension));
         System.out.println(configString);
 
-        FlowConfig flowScript = FlowConfigParser.parse(configString);
+        FlowConfig flowScript = FlowConfigParser.parseJson(configString);
         CreateOrderActionExtension ex = (CreateOrderActionExtension) flowScript.getScripts().get(0).getExtensions().get("CreateOrderActionExt");
         System.out.println(ex.getTitle());
         System.out.println(JSON.toJSONString(flowScript,true));

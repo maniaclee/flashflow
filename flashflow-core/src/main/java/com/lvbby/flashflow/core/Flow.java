@@ -34,7 +34,7 @@ public class Flow {
         load.forEach(iFlowAction -> FlowContainer.registerFlowAction(iFlowAction));
     }
     public static void loadConfig(String jsonConfig) {
-        FlowConfig config = FlowConfigParser.parse(jsonConfig);
+        FlowConfig config = FlowConfigParser.parseJson(jsonConfig);
         /** 1. script */
         if (FlowUtils.isNotEmpty(config.getScripts())) {
             config.getScripts().forEach(s -> FlowContainer.addFlowConfig(s));
