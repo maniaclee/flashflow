@@ -94,19 +94,17 @@ public class FlashflowLocalExample {
 
         /** 1. 定义流程编排*/
         FlowNode pipeline = FlowNode.node(initAction)
-                .next(node(processAction)
-                        .when(ctx -> FlowUtils.equals(ctx.getValueString("props"), "test"))
+                .next(node(processAction).when(ctx -> FlowUtils.equals(ctx.getValueString("props"), "test"))
                 );
 
         /** 2. 定义场景：流程+扩展点 */
         FlowScript.of("pipeline", pipeline)
                 .addExtension((CreateOrderActionExtension) () -> "test title")//
-                .register()
-        ;
+                .register();
 
         /** 启动流程 */
-        Flow.exec(new OrderContext("example"));
         Flow.exec(new OrderContext("pipeline").putValue("props", "test"));
+        Flow.exec(new OrderContext("pipeline").putValue("props", "invalid props"));
     }
 
 }

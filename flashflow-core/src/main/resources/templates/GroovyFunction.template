@@ -1,0 +1,11 @@
+package ${packageName}
+
+import java.util.function.Function
+import com.lvbby.flashflow.core.FlowContext
+
+class ${functionName}  implements Function<${fromType},${toType}>{
+    @Override
+    String apply(${fromType} src) {
+        return ${script}
+    }
+}

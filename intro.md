@@ -56,7 +56,7 @@ public interface IFlowAction<IContext extends FlowContext> {
     void invoke(IContext context) throws Exception;
 }
 ```
-每个模块需要做的事情就是基于上线文「FlowContext」实现invoke方法里的自定义业务逻辑
+每个模块需要做的事情就是基于上下文「FlowContext」实现invoke方法里的自定义业务逻辑
 上下文不用多说，IFlowAction的上下文类型可以自行定义
 ## 模块id
 每个IFlowAction都具有一个id，这个id是在流程引擎的唯一标识，类似spring的唯一beanName
@@ -160,5 +160,54 @@ public class FlowConfig implements Serializable {
  }
 }
 ```
+## 动态属性
+属性通常是静态数据类型，如String、int等，某些场景需要动态特性类来进行扩展，如函数扩展；
+具体而言，加入一个mybatis生成器要支持动态指定生成DO的名称，则需要支持用户基于函数来根据表名来动态定制，
+所以flashflow的属性支持Function接口，使用如下:
+```java
+@FlowAction
+public class DbBeanGenAction implements IFlowAction {
+
+    /***
+     * 定义动态属性：生成bean的name命名方式
+     */
+    @FlowProp
+    public static final FlowKey<Function<String,String>> beanNameFunc = new FlowKey<>("db.bean.nameFunc");
+
+    public void invoke(FlowContext context) throws Exception {
+        SqlTable table = FlowHelper.getValueOrProp(CoderFlowKeys.dbTable);
+
+        String beanName = table.getName();
+        //bean名称自定义
+        Function<String, String> beanNameFunction = FlowHelper.getValueOrProp(beanNameFunc);
+        if(beanNameFunction!=null){
+            beanName = beanNameFunction.apply(beanName);
+        }
+        System.out.println(beanName);
+    }
+}
+```
+代码详情可参考：com.lvbby.coderflow.compont.DbBeanGenAction
+json配置文件中可以使用groovy脚本来实现Function扩展的逻辑，自定义
+```json
+{
+  "scripts":[
+    {
+      "code":"mybatisTest",
+      "pipeline":{
+        "actionId":"dbBeanGenAction"
+      },
+      "props":{
+        "db.bean.nameFunc": "src+'DO'"
+      }
+    }
+  ]
+}
+```
+上面配置文件定义了一个流程名称为mybatisTest，流程编排使用了dbBeanGenAction模块，
+dbBeanGenAction的动态属性`db.bean.nameFunc`内容为一段groovy脚本，逻辑是「生成DO的类名为表名+DO后缀」
+需要说明的是：
+> groovy脚本里的入参名固定为src
+
+实现原理是将groovy脚本动态生成Function的代理
 # 进阶使用
-## 属性

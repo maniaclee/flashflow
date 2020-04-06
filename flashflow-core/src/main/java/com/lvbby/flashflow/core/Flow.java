@@ -33,6 +33,7 @@ public class Flow {
         ServiceLoader<IFlowAction> load = ServiceLoader.load(IFlowAction.class);
         load.forEach(iFlowAction -> FlowContainer.registerFlowAction(iFlowAction));
     }
+
     public static void loadConfig(String jsonConfig) {
         FlowConfig config = FlowConfigParser.parseJson(jsonConfig);
         /** 1. script */
@@ -41,8 +42,13 @@ public class Flow {
         }
         /** 2. props */
         if (config.getProps() != null) {
-            FlowContainer.getGlobalProps().putAll(config.getProps());
+            FlowContainer.getProps().putAll(config.getProps());
         }
+
+        //解析props
+        FlowContainer.visitAllProp((key, map) -> {
+            map.put(key, FlowHelper.parseProp(key, map.get(key)));
+        });
 
     }
 
@@ -112,8 +118,6 @@ public class Flow {
 
         try {
             FlowNode node = context.getConfig().getPipeline();
-            /** 标记当前的节点 */
-            context.put(FlowFrameWorkKeys.currentNode, node);
             _doExec(context, node);
         } catch (FlowException e) {
             switch (e.getCode()) {
@@ -137,6 +141,8 @@ public class Flow {
      * @param <IContext>
      */
     private static <IContext extends FlowContext> void _doExec(IContext context, FlowNode node) throws Exception {
+        /** 标记当前的节点 */
+        context.put(FlowFrameWorkKeys.currentNode, node);
         Boolean stopFlag = context.get(FlowFrameWorkKeys.stopFlag);
         /** stop flow */
         if (stopFlag != null && stopFlag) {
@@ -212,6 +218,8 @@ public class Flow {
             flowActionInfo.actionClass = clz;
             flowActionInfo.name = ((IFlowAction) FlowUtils.newInstance(clz)).actionId();
             flowActionInfo.props = buildProps(clz);
+            //props里也保存一份
+            flowActionInfo.props.forEach(p -> FlowContainer.propMetaInfo.put(p.getKey(), p));
             return flowActionInfo;
         }).collect(Collectors.toList());
     }

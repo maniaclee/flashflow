@@ -1,11 +1,13 @@
 
 package com.lvbby.flashflow.core;
 
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.lvbby.flashflow.core.utils.FlowUtils;
 import com.lvbby.flashflow.core.utils.FlowHelper;
 
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -27,6 +29,8 @@ public class FlowNode {
      * 多个action复用时通过alias区分
      */
     private String                 alias;
+
+    private JSONObject props;
 
     public static FlowNode node(IFlowAction action) {
         return ofAlias(action, null);
@@ -59,6 +63,14 @@ public class FlowNode {
         return re;
     }
 
+    public void visit(Consumer<FlowNode> nodeConsumer){
+        nodeConsumer.accept(this);
+        if(children!=null){
+            for (FlowNode child : children) {
+                child.visit(nodeConsumer);
+            }
+        }
+    }
     /***
      * build
      * @param nodes
@@ -70,6 +82,25 @@ public class FlowNode {
         }
         for (FlowNode node : nodes) {
             children.add(node);
+        }
+        return this;
+    }
+
+    public FlowNode prop(String key, Object value) {
+        if (value != null) {
+            if (props == null) {
+                props = new JSONObject();
+            }
+            props.put(key, value);
+        }
+        return this;
+    }
+    public <T> FlowNode prop(FlowKey<T> key, T value) {
+        if (value != null) {
+            if (props == null) {
+                props = new JSONObject();
+            }
+            props.put(key.getKey(), value);
         }
         return this;
     }
@@ -181,5 +212,23 @@ public class FlowNode {
      */
     public void setName(String name) {
         this.name = name;
+    }
+
+    /**
+     * Getter method for property   props.
+     *
+     * @return property value of props
+     */
+    public JSONObject getProps() {
+        return props;
+    }
+
+    /**
+     * Setter method for property   props .
+     *
+     * @param props  value to be assigned to property props
+     */
+    public void setProps(JSONObject props) {
+        this.props = props;
     }
 }

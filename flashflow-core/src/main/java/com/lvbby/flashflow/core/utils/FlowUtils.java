@@ -1,5 +1,6 @@
 package com.lvbby.flashflow.core.utils;
 
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
@@ -10,6 +11,7 @@ import com.google.common.reflect.ClassPath.ClassInfo;
 import com.lvbby.flashflow.core.Flow;
 import com.lvbby.flashflow.core.error.FlowErrorCodeEnum;
 import com.lvbby.flashflow.core.error.FlowException;
+import com.lvbby.flashflow.core.template.BeetlTemplateEngine;
 import groovy.lang.GroovyClassLoader;
 import org.apache.commons.lang3.ClassUtils;
 
@@ -95,7 +97,10 @@ public class FlowUtils {
         if (isBlank(s)) {
             return s;
         }
-        return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, s);
+        if(s.contains("_")) {
+            return CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, s);
+        }
+        return s;
     }
 
     public static boolean isClassOf(Class toCheck, Class target) {
@@ -229,4 +234,19 @@ public class FlowUtils {
                 matcher -> matcher.group("class"));
     }
 
+    public static String getPackageName(String classFullName){
+        return ClassUtils.getPackageName(classFullName);
+    }
+    public static String getShortClassName(String classFullName){
+        return ClassUtils.getShortClassName(classFullName);
+    }
+
+    public static String renderTemplate(String classPathResource, JSONObject args) {
+        return renderTemplateByScript(readResourceFile(classPathResource), args);
+    }
+    public static String renderTemplateByScript(String template, JSONObject args) {
+        BeetlTemplateEngine beetlTemplateEngine = new BeetlTemplateEngine(template);
+        beetlTemplateEngine.binding(args);
+        return beetlTemplateEngine.render();
+    }
 }

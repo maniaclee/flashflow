@@ -11,6 +11,7 @@ import com.lvbby.flashflow.core.utils.FlowUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 /**
  * 容器，装在全局的流程和模块
@@ -31,11 +32,17 @@ public class FlowContainer {
     /***
      * 全局属性
      */
-    public static JSONObject globalProps = new JSONObject();
+    public static JSONObject props = new JSONObject();
 
-
+    /***
+     * action信息，包含name、属性meta等
+     */
     public static List<FlowActionInfo> actionMetaInfo = Lists.newLinkedList();
 
+    /**
+     * 属性描述信息，包括全局+action
+     * @see Flow#scanProps(java.lang.String...)
+     */
     public static Map<String, FlowPropInfo> propMetaInfo = Maps.newHashMap();
 
     public static FlowScript getFlowConfig(String code) {
@@ -46,6 +53,36 @@ public class FlowContainer {
         return actionMap.get(actionId);
     }
 
+    /***
+     * 访问所有属性
+     * 1. node
+     * 2. script
+     * 3. 全局
+     * @param consumer
+     */
+    public static void visitAllProp(BiConsumer<String, Map> consumer) {
+        //1. 全局属性
+        for (String s : props.keySet()) {
+            consumer.accept(s, props);
+        }
+        for (FlowScript flowScript : configMap.values()) {
+            Map<String, Object> props = flowScript.getProps();
+            //2. script属性
+            for (String s : props.keySet()) {
+                consumer.accept(s,props);
+            }
+            //3. node属性
+            flowScript.getPipeline().visit(node -> {
+                JSONObject ps = node.getProps();
+                if(ps!=null){
+                    for (String s : ps.keySet()) {
+                        consumer.accept(s,ps);
+                    }
+                }
+            });
+        }
+
+    }
     /***
      * 注册Action
      * @param action
@@ -113,7 +150,7 @@ public class FlowContainer {
      *
      * @return property value of props
      */
-    public static JSONObject getGlobalProps() {
-        return globalProps;
+    public static JSONObject getProps() {
+        return props;
     }
 }
