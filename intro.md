@@ -67,6 +67,55 @@ actionId默认的取值方式如下：
 2. IFlowAction 类名的lowerCamel模式，同spring bean的命名方式
 3. 在spring环境中便是beanName
 
+# 属性
+action可以通过定义属性来支持扩展
+属性的定义可以是任何方式，比如最简单的static field
+```java
+@FlowAction
+public class ClipBoardAction implements IFlowAction {
+
+    @FlowProp
+    public static String copyClipBoardKey = "printKey";
+
+    @Override
+    public void invoke(FlowContext context) throws Exception {
+        System.out.println(FlowHelper.getValueOrProp(copyClipBoardKey));
+    }
+}
+```
+## 属性设置
+### API
+通过API方式来执行
+```java
+OrderContext context = new OrderContext();
+context.putValue(ClipBoardAction.copyClipBoardKey, "sdfsdf");
+Flow.execSimple(context,startAction, endAction);
+```
+### 配置文件设置属性
+属性的设置可以在不同级别进行设置
+1. 全局属性
+2. 业务场景里的特有属性
+3. action模块的属性
+实例如下:
+```json
+{
+  "scripts":[
+    {
+      "code":"propDemo",
+      "pipeline":{
+        "actionId":"clipBoardAction",
+        "props":{"printKey": "action级别属性，优先最高"}
+      },
+      "props":{"printKey": "script级别属性，优先级高于全局属性"}
+    }
+  ],
+  "props":{"printKey": "全局属性，所有script都可以复用"}
+}
+```
+## 属性级别
+前面例子提到 TODO
+## 动态属性
+Function函数类型的属性，在后面后具体介绍
 # 流程编排
 ## 1. API方式
 API方式的流程编排基于树形数据结构的「FlowNode」，每个模块支持condition
@@ -210,4 +259,89 @@ dbBeanGenAction的动态属性`db.bean.nameFunc`内容为一段groovy脚本，�
 > groovy脚本里的入参名固定为src
 
 实现原理是将groovy脚本动态生成Function的代理
-# 进阶使用
+# 自动扫描
+在非spring环境下使用，flashflow提供类似spring的扫描机制来自动注册action、prop
+## Action扫描
+使用`Flow.scanActions("packageName")`可以自动扫描package下的类，自动将扫描到的IFlowAction生成实例注册到框架中；
+json配置文件使用时可直接使用action的actionId
+```json
+Flow.scanActions("com.lvbby.coderflow");
+Flow.loadConfig(FlowUtils.readResourceFile("flow/mybatis.json"));
+Flow.exec(new FlowContext("mybatisTest"));
+```
+## 生成文档
+当项目涉及的action和属性比较多是，需要提供相应的API文档来给使用着查看
+如当前项目提供了哪些模块、每个模块提供了哪些属性、属性的值是什么类型等；
+flashflow提供了两个工具进行文档生成：
+`com.lvbby.flashflow.core.tool.FlowTool#createFlowDoc`用于生成markdown文档
+使用方法如下：
+```java
+//可选: 扫描action
+Flow.scanActions("com.lvbby.coderflow");
+//可选：扫描属性
+Flow.scanProps("com.lvbby.coderflow");
+//将当前flashflow框架里注册的action、props等信息整理成markdown文档
+System.out.println(FlowTool.createFlowDoc());
+```
+如果所有的action和prop都已经注册到框架，则Flow.scanProps和Flow.scanActions可不用调用
+* Flow.scanActions：扫描action生成实例注册到框架中
+* Flow.scanProps：扫描属性，整理相关信息（属性名称、类型等）
+用户定义的属性通常是一些static的field，无法被flashflow识别，但是通过一些注解可以被flashflow扫描到，从而生成相应的文档
+属性涉及的注解如下：
+### @FlowProp
+```java
+public @interface FlowProp {
+    String value() default "";
+}
+```
+@FlowProp#value()用来标识属性的说明信息
+
+### @FlowPropConfig
+标注在专门用来定义『全局属性』的类上面，表明当前类定义的各种属性都是全局属性
+```java
+public @interface FlowPropConfig {
+}
+```
+使用如下：
+```java
+@FlowPropConfig
+public class CoderProps {
+    /** java src目录*/
+    @FlowProp
+    public static final FlowKey<String>        javaSrcDirectory = new FlowKey<>("java.src");
+}
+```
+
+
+
+# 注解
+## @FlowAction
+> 标识一个action，可以指定actionId和扩展接口类型
+
+```java
+@Target({ElementType.TYPE})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface FlowAction {
+    /***
+     * action提供的扩展接口
+     * @return
+     */
+    Class<? extends IFlowActionExtension>[] value() default {};
+
+    /***
+     * action的ID，不指定则使用默认策略生成：
+     * 1. 类名的lowerCamel模式，通spring bean name策略
+     * 2. spring环境下为beanName
+     * @return
+     */
+    String id() default "";
+}
+```
+
+# 工具
+
+# 样例
+更多样例可参考项目 https://github.com/maniaclee/coderflow
+
+

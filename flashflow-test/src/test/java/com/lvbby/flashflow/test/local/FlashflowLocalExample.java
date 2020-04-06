@@ -48,6 +48,12 @@ public class FlashflowLocalExample {
         Flow.execSimple(new OrderContext(),startAction, endAction);
         Flow.exec(new OrderContext(),FlowNode.ofArray(startAction, endAction));
     }
+    @Test
+    public void propDemo() throws Exception {
+        OrderContext context = new OrderContext();
+        context.putValue("props", "sdfsdf");
+        Flow.execSimple(context,startAction, endAction);
+    }
 
     @Test
     public void quickScriptWithProp() throws Exception {

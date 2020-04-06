@@ -20,7 +20,6 @@ public class FlowTool {
         FlowOutlineInfo flowOutlineInfo = new FlowOutlineInfo();
         flowOutlineInfo.props = Lists.newArrayList(FlowContainer.propMetaInfo.values());
         flowOutlineInfo.actions = FlowContainer.actionMetaInfo;
-
         return new BeetlTemplateEngine(FlowUtils.readResourceFile("templates/README.md")).bind("src", flowOutlineInfo).render();
     }
 

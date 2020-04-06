@@ -8,6 +8,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.function.Function;
 
 /**
  *
@@ -46,6 +47,9 @@ public class FlowPropInfo {
             }
             if(FlowUtils.isClassOf(clz, Collection.class)){
                 return Collections.emptyList();
+            }
+            if(FlowUtils.isClassOf(clz, Function.class)){
+                return"groovy的Function函数，入参名为src";
             }
             return FlowUtils.newInstance(clz);
         }
